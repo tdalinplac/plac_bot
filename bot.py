@@ -1,12 +1,13 @@
-
 import os
+from flask import Flask, request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
+from telegram.ext import (
+    ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler,
+    ContextTypes, filters
+)
 
-# Set token directly
-BOT_TOKEN = "7640462025:AAHtwENanJ-UUenKeJA8YnFWetMrAplFq4A"
+BOT_TOKEN = os.environ.get("7640462025:AAHtwENanJ-UUenKeJA8YnFWetMrAplFq4A")
 
-# Group chat IDs
 group_chat_ids = [
     '-4938012309',
     '-4613148577',
@@ -15,11 +16,16 @@ group_chat_ids = [
     '-4917561606',
 ]
 
-# Dictionary to store user-agent mapping
 user_agent_mapping = {}
+
+app = Flask(__name__)
+bot_app = ApplicationBuilder().token(BOT_TOKEN).build()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text('សួស្តី! ខ្ញុំជាបុត Telegram របស់អ្នក។')
+
+async def show_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(f"Chat ID: {update.message.chat_id}")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
@@ -31,16 +37,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Add logic to check if user_id is already claimed
     if str(user_id) in user_agent_mapping:
-        # Send message to the claimed group only
         group_id = user_agent_mapping[str(user_id)]["group_id"]
-        await context.bot.send_message(
-            chat_id=group_id,
-            text=f"សារថ្មីពី user {user_id}: {user_message}",
-        )
+        await context.bot.send_message(chat_id=group_id, text=f"សារថ្មីពី user {user_id}: {user_message}")
     else:
-        # Send message to all groups
         for group_id in group_chat_ids:
             await context.bot.send_message(
                 chat_id=group_id,
@@ -64,19 +64,19 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         else:
             await query.answer("អ្នកត្រូវ Claim សារមុនសិន។")
 
-async def show_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.message.chat_id
-    await update.message.reply_text(f"Chat ID: {chat_id}")
+# Register handlers
+bot_app.add_handler(CommandHandler("start", start))
+bot_app.add_handler(CommandHandler("chatid", show_chat_id))
+bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+bot_app.add_handler(CallbackQueryHandler(handle_callback_query))
 
-def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+# Flask route for webhook
+@app.route(f"/{BOT_TOKEN}", methods=["POST"])
+async def webhook():
+    update = Update.de_json(request.get_json(force=True), bot_app.bot)
+    await bot_app.process_update(update)
+    return "ok"
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("chatid", show_chat_id))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    app.add_handler(CallbackQueryHandler(handle_callback_query))
-
-    app.run_polling()
-
-if __name__ == '__main__':
-    main()
+@app.route("/")
+def index():
+    return "Bot is running!"
