@@ -18,7 +18,7 @@ group_chat_ids = [
     '-4613148577',
     '-4829453971',
     '-4935109561',
-    '-4917561606'
+    '-4917561606',
 ]
 
 # Dictionary to store user-agent mapping
@@ -75,7 +75,7 @@ async def show_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Chat ID: {chat_id}")
 
 def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app = ApplicationBuilder().token(7640462025:AAHtwENanJ-UUenKeJA8YnFWetMrAplFq4A).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("chatid", show_chat_id))
