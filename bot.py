@@ -1,13 +1,19 @@
 import os
+import logging
 from flask import Flask, request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler,
-    ContextTypes, filters
+    ContextTypes, filters, WebhookHandler
 )
 
+# Logging setup
+logging.basicConfig(level=logging.INFO)
+
+# Load bot token from environment
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
+# Group chat IDs
 group_chat_ids = [
     '-4938012309',
     '-4613148577',
@@ -16,11 +22,17 @@ group_chat_ids = [
     '-4917561606',
 ]
 
+# Store user-agent mapping
 user_agent_mapping = {}
 
+# Flask app
 app = Flask(__name__)
-bot_app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+# Telegram bot app
+bot_app = ApplicationBuilder().token(BOT_TOKEN).build()
+webhook_handler = WebhookHandler(bot_app)
+
+# Handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text('សួស្តី! ខ្ញុំជាបុត Telegram របស់អ្នក។')
 
@@ -70,11 +82,13 @@ bot_app.add_handler(CommandHandler("chatid", show_chat_id))
 bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 bot_app.add_handler(CallbackQueryHandler(handle_callback_query))
 
-# Flask route for webhook
+# Webhook route
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 async def webhook():
-    update = Update.de_json(request.get_json(force=True), bot_app.bot)
-    await bot_app.process_update(update)
+    try:
+        await webhook_handler.handle_update(request)
+    except Exception as e:
+        logging.exception("Error while processing update:")
     return "ok"
 
 @app.route("/")
