@@ -4,5 +4,8 @@ services:
     name: telegram-bot
     env: python
     plan: free
-    buildCommand: ""
-    startCommand: "python bot.py"
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn bot:app"
+    envVars:
+      - key: BOT_TOKEN
+        value: 7640462025:AAHtwENanJ-UUenKeJA8YnFWetMrAplFq4A
