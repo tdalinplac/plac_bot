@@ -4,7 +4,7 @@ from flask import Flask, request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler,
-    ContextTypes, filters, WebhookHandler
+    ContextTypes, filters
 )
 
 # Logging setup
@@ -30,7 +30,6 @@ app = Flask(__name__)
 
 # Telegram bot app
 bot_app = ApplicationBuilder().token(BOT_TOKEN).build()
-webhook_handler = WebhookHandler(bot_app)
 
 # Handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -86,7 +85,9 @@ bot_app.add_handler(CallbackQueryHandler(handle_callback_query))
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 async def webhook():
     try:
-        await webhook_handler.handle_update(request)
+        data = request.get_json(force=True)
+        update = Update.de_json(data, bot_app.bot)
+        await bot_app.process_update(update)
     except Exception as e:
         logging.exception("Error while processing update:")
     return "ok"
