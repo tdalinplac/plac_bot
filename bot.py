@@ -6,7 +6,7 @@ from telegram.ext import (
     ContextTypes, filters
 )
 
-BOT_TOKEN = os.environ.get("7640462025:AAHtwENanJ-UUenKeJA8YnFWetMrAplFq4A")
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
 group_chat_ids = [
     '-4938012309',
